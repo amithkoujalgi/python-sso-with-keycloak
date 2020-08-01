@@ -72,22 +72,22 @@ def logout():
 
 @app.route('/setup')
 def setup():
-    admin = KeycloakAdmin(
-        server_url='http://localhost:8080/auth/',
-        username='admin',
-        password='admin',
-        realm_name='master',
-        verify=True
-    )
-    new_realm_name = 'test'
+    # get request param
+    new_realm_name = request.args.get('realm')
+    if new_realm_name is None or new_realm_name == '':
+        logging.info(f'Fetching realms...')
+        available_realms = [r['realm'] for r in KeycloakAdminUtil.client().get_realms()]
+        return Response(json.dumps(available_realms), mimetype='application/json')
 
-    realms = admin.get_realms()
+    realms = KeycloakAdminUtil.client().get_realms()
 
     found = False
+    realm = None
 
     for r in realms:
         if r['id'] == new_realm_name:
             found = True
+            realm = r
 
     if not found:
         logging.info(f'Creating realm {new_realm_name}...')
@@ -96,10 +96,23 @@ def setup():
             realm=new_realm_name,
             displayName=new_realm_name
         )
-        admin.create_realm(payload=new_realm)
+        KeycloakAdminUtil.client().create_realm(payload=new_realm)
 
-    logging.info(f'Fetching realms...')
-    return Response(json.dumps(admin.get_realms()), mimetype='application/json')
+    logging.info(f'Fetching realm...')
+    return Response(json.dumps(realm), mimetype='application/json')
+
+
+class KeycloakAdminUtil:
+    @staticmethod
+    def client():
+        admin = KeycloakAdmin(
+            server_url='http://localhost:8080/auth/',
+            username='admin',
+            password='admin',
+            realm_name='master',
+            verify=True
+        )
+        return admin
 
 
 if __name__ == '__main__':
