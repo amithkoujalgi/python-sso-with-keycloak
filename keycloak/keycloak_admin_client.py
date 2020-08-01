@@ -1,7 +1,7 @@
 from typing import List
 
 
-from http_util import HttpUtil
+from utils.http_util import HttpUtil
 from keycloak.kc_config import KeycloakAdminClientConfig
 from model.realm import Realm, RealmList
 

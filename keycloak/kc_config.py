@@ -1,6 +1,4 @@
-import requests
-
-from http_util import HttpUtil
+from utils.http_util import HttpUtil
 from model.token import KCAuthResponse
 
 

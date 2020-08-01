@@ -2,7 +2,7 @@ from typing import Optional, List, Any
 
 from pydantic import BaseModel
 
-from http_util import HttpUtil
+from utils.http_util import HttpUtil
 from keycloak.keycloak_admin_client import KeycloakAdminClientConfig
 from model.client import ClientList
 from model.user import UserList, User
