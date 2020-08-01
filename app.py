@@ -1,7 +1,7 @@
 import urllib
 
 import flask_login
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_oidc import OpenIDConnect
 from werkzeug.utils import redirect
 from keycloak import KeycloakAdmin
@@ -76,8 +76,21 @@ def setup():
         realm_name='master',
         verify=True
     )
+    new_realm_name = 'test'
 
-    users = admin.get_users()
+    realms = admin.get_realms()
+    for r in realms:
+        if r['id'] == new_realm_name:
+            found = True
+    if not found:
+        new_realm = dict(
+            id=new_realm_name,
+            realm=new_realm_name,
+            displayName=new_realm_name
+        )
+        admin.create_realm(payload=new_realm)
+
+    return Response(json.dumps(admin.get_realms()), mimetype='application/json')
 
 
 if __name__ == '__main__':
