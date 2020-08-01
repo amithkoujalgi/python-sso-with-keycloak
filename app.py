@@ -1,3 +1,4 @@
+import logging
 import urllib
 
 import flask_login
@@ -5,6 +6,8 @@ from flask import Flask, request, Response
 from flask_oidc import OpenIDConnect
 from werkzeug.utils import redirect
 from keycloak import KeycloakAdmin
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
@@ -79,10 +82,15 @@ def setup():
     new_realm_name = 'test'
 
     realms = admin.get_realms()
+
+    found = False
+
     for r in realms:
         if r['id'] == new_realm_name:
             found = True
+
     if not found:
+        logging.info(f'Creating realm {new_realm_name}...')
         new_realm = dict(
             id=new_realm_name,
             realm=new_realm_name,
@@ -90,8 +98,9 @@ def setup():
         )
         admin.create_realm(payload=new_realm)
 
+    logging.info(f'Fetching realms...')
     return Response(json.dumps(admin.get_realms()), mimetype='application/json')
 
 
 if __name__ == '__main__':
-    app.run('localhost', port=5000)
+    app.run(debug=True, host='localhost', port=5000)
