@@ -2,6 +2,11 @@ from typing import Optional, List, Any
 
 from pydantic import BaseModel
 
+from http_util import HttpUtil
+from keycloak.keycloak_admin_client import KeycloakAdminClientConfig
+from model.client import ClientList
+from model.user import UserList, User
+
 
 class Attributes(BaseModel):
     permanentLockout: bool
@@ -100,6 +105,45 @@ class Realm(BaseModel):
     userManagedAccessAllowed: bool
     displayName: Optional[str] = None
     displayNameHtml: Optional[str] = None
+
+    def create_client(self, client_id, root_url):
+        headers = {
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': f'Bearer {KeycloakAdminClientConfig.kc_access_token}',
+            'Content-Type': 'application/json;charset=UTF-8'
+        }
+        data = {
+            "enabled": True,
+            "attributes": {},
+            "redirectUris": [],
+            "clientId": client_id,
+            "rootUrl": root_url,
+            "protocol": "openid-connect"
+        }
+        url = f'{KeycloakAdminClientConfig.kc_host}/admin/realms/{self.realm}/clients'
+        res = HttpUtil.post(url=url, headers=headers, data=data)
+        return
+
+    def clients(self):
+        headers = {
+            'accept': 'application/json',
+            'authorization': f'Bearer {KeycloakAdminClientConfig.kc_access_token}'
+        }
+        url = f'{KeycloakAdminClientConfig.kc_host}/admin/realms/{self.realm}/clients'
+        res = HttpUtil.get(url=url, headers=headers)
+        res = res.decode()
+        clients = ClientList.parse_raw(str(res))
+        return clients.__root__
+
+    def get_users(self) -> List[User]:
+        headers = {
+            'accept': 'application/json',
+            'authorization': f'Bearer {KeycloakAdminClientConfig.kc_access_token}'
+        }
+        url = f'{KeycloakAdminClientConfig.kc_host}/admin/realms/{self.realm}/users'
+        res = HttpUtil.get(url=url, headers=headers)
+        users = UserList.parse_raw(res)
+        return users.__root__
 
 
 class RealmList(BaseModel):
