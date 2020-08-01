@@ -1,7 +1,9 @@
 import logging
 import urllib
+import uuid
 
 import flask_login
+import requests
 from flask import Flask, request, Response
 from flask_oidc import OpenIDConnect
 from werkzeug.utils import redirect
@@ -70,6 +72,11 @@ def logout():
     return redirect(KC_SERVER_LOGOUT_ENDPOINT)
 
 
+@app.route('/info')
+def info():
+    return Response(json.dumps(KeycloakAdminUtil.clients_info()), mimetype='application/json')
+
+
 @app.route('/setup')
 def setup():
     # get request param
@@ -91,12 +98,7 @@ def setup():
 
     if not found:
         logging.info(f'Creating realm {new_realm_name}...')
-        new_realm = dict(
-            id=new_realm_name,
-            realm=new_realm_name,
-            displayName=new_realm_name
-        )
-        KeycloakAdminUtil.client().create_realm(payload=new_realm)
+        KeycloakAdminUtil.setup_realm(new_realm_name)
 
     logging.info(f'Fetching realm...')
     return Response(json.dumps(realm), mimetype='application/json')
@@ -113,6 +115,60 @@ class KeycloakAdminUtil:
             verify=True
         )
         return admin
+
+    @staticmethod
+    def create_realm_client(realm_name):
+        host_root_url = 'http://localhost:5000'
+        client_id = str(uuid.uuid4()) + "-auth"
+        client = dict(
+            name='Test-Client',
+            publicClient=True,
+            clientId=client_id,
+            rootUrl=host_root_url,
+            redirectUris=[f'{host_root_url}/*']
+        )
+        print(f"Creating realm {realm_name} client: {client}")
+        requests.post(url=f"{KC_SERVER_AUTH_ENDPOINT}/{realm_name}/client", data=client)
+
+    @staticmethod
+    def clients_info():
+        kc = KeycloakAdminUtil.client()
+        return kc.get_clients()
+
+    @staticmethod
+    def setup_realm(realm_name):
+        keycloakSMTPUsername = ''
+        keycloakSMTPPassword = ''
+
+        new_realm = dict(
+            id=realm_name,
+            realm=realm_name,
+            displayName=realm_name,
+            enabled=True,
+            resetPasswordAllowed=True,
+            smtpServer=dict(
+                password=keycloakSMTPPassword,
+                starttls='true',
+                auth='true',
+                port='587',
+                host='smtp.gmail.com',
+                ssl='false',
+                user=keycloakSMTPUsername,
+                fromDisplayName='Razorthink aiOS'
+            ),
+            loginTheme='RazorthinkAILoginTheme',
+            emailTheme='RazorthinkAILoginTheme',
+            passwordPolicy="length(8)"
+        )
+        new_realm['smtpServer']['from'] = keycloakSMTPUsername
+
+        new_realm_client = dict(
+            id=realm_name,
+            realm=realm_name,
+            displayName=realm_name
+        )
+        KeycloakAdminUtil.client().create_realm(payload=new_realm)
+        KeycloakAdminUtil.create_realm_client(realm_name)
 
 
 if __name__ == '__main__':
