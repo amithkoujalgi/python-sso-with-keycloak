@@ -4,6 +4,7 @@ import flask_login
 from flask import Flask, request
 from flask_oidc import OpenIDConnect
 from werkzeug.utils import redirect
+from keycloak import KeycloakAdmin
 
 app = Flask(__name__)
 
@@ -64,6 +65,19 @@ def home():
 def logout():
     oidc.logout()
     return redirect(KC_SERVER_LOGOUT_ENDPOINT)
+
+
+@app.route('/setup')
+def setup():
+    admin = KeycloakAdmin(
+        server_url='http://localhost:8080/auth/',
+        username='admin',
+        password='admin',
+        realm_name='master',
+        verify=True
+    )
+
+    users = admin.get_users()
 
 
 if __name__ == '__main__':
