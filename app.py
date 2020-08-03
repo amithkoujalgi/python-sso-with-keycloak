@@ -18,6 +18,7 @@ login_manager.init_app(app)
 KC_SERVER_AUTH_ENDPOINT = 'http://localhost:8080/auth'
 AUTH_SERVER_ENDPOINT = 'http://localhost:5000'
 REALM = 'master'
+
 KC_SERVER_LOGOUT_ENDPOINT = f"{KC_SERVER_AUTH_ENDPOINT}/realms/{REALM}/protocol/openid-connect/logout?redirect_uri={urllib.parse.quote(AUTH_SERVER_ENDPOINT)}"
 
 app.config.update({
